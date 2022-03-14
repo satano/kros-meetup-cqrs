@@ -21,7 +21,9 @@ namespace StudentManagement.Data
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlServer("Name=ConnectionStrings:Default");
+                optionsBuilder
+                    .UseLazyLoadingProxies()
+                    .UseSqlServer("Name=ConnectionStrings:Default");
             }
         }
 
@@ -41,20 +43,19 @@ namespace StudentManagement.Data
                 entity.HasOne(d => d.Course)
                     .WithMany(p => p.Enrollments)
                     .HasForeignKey(d => d.CourseId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("FK_Enrollments_Courses");
 
                 entity.HasOne(d => d.Student)
                     .WithMany(p => p.Enrollments)
                     .HasForeignKey(d => d.StudentId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("FK_Enrollments_Students");
             });
 
             modelBuilder.Entity<Student>(entity =>
             {
                 entity.Property(e => e.Email).HasMaxLength(50);
-
                 entity.Property(e => e.Name).HasMaxLength(50);
             });
 
