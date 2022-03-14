@@ -17,7 +17,7 @@ namespace StudentManagement.Data
             return student;
         }
 
-        public List<Student> GetList(string enrolledIn)
+        public IEnumerable<Student> GetList(string enrolledIn)
         {
             IQueryable<Student> query = _dbContext.Students;
 

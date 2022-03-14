@@ -1,3 +1,4 @@
+using MediatR;
 using StudentManagement.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddDbContext<KrosMeetupCqrsContext>();
+builder.Services.AddMediatR(typeof(Program));
 
 var app = builder.Build();
 

@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Commands;
 using StudentManagement.Data;
 using StudentManagement.Dto;
+using StudentManagement.Queries;
 
 namespace StudentManagement.Controllers
 {
@@ -9,24 +11,26 @@ namespace StudentManagement.Controllers
     [Route("api/[controller]")]
     public class StudentsController : ControllerBase
     {
+        private readonly IMediator _mediator;
         private readonly KrosMeetupCqrsContext _dbContext;
         private readonly StudentRepository _studentRepository;
         private readonly CourseRepository _courseRepository;
 
-        public StudentsController(KrosMeetupCqrsContext dbContext)
+        public StudentsController(IMediator mediator, KrosMeetupCqrsContext dbContext)
         {
+            _mediator = mediator;
             _dbContext = dbContext;
             _studentRepository = new StudentRepository(_dbContext);
             _courseRepository = new CourseRepository(_dbContext);
         }
 
         [HttpGet]
-        public IEnumerable<StudentDto> GetList(string enrolledIn)
-            => _studentRepository.GetList(enrolledIn).Select(s => ConvertToDto(s));
+        public async Task<IEnumerable<StudentDto>> GetList(string enrolledIn)
+            => (await _mediator.Send(new GetStudentList.Query(enrolledIn))).Select(s => ConvertToDto(s));
 
         [HttpGet("{id}")]
-        public StudentDto Get(int id)
-            => ConvertToDto(_studentRepository.GetById(id));
+        public async Task<StudentDto> Get(int id)
+            => ConvertToDto(await _mediator.Send(new GetStudent.Query(id)));
 
         [HttpPost]
         public IActionResult Register([FromBody] NewStudentDto dto)
@@ -122,9 +126,8 @@ namespace StudentManagement.Controllers
         [HttpPut("{id}")]
         public IActionResult EditPersonalInfo(int id, [FromBody] StudentPersonalInfoDto dto)
         {
-            var command = new EditPersonalInfoCommand(id, dto.Name, dto.Name);
-            var handler = new EditPersonalInfoCommandHandler(_dbContext);
-            handler.Handle(command);
+            var command = new EditPersonalInfoCommand(id, dto.Name, dto.Email);
+            _mediator.Send(command);
             return Ok();
         }
 
