@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using StudentManagement.Commands;
 using StudentManagement.Data;
 using StudentManagement.Dto;
 
@@ -121,15 +122,9 @@ namespace StudentManagement.Controllers
         [HttpPut("{id}")]
         public IActionResult EditPersonalInfo(int id, [FromBody] StudentPersonalInfoDto dto)
         {
-            Student student = _studentRepository.GetById(id);
-            if (student is null)
-            {
-                return BadRequest($"No student found with ID {id}.");
-            }
-
-            student.Name = dto.Name;
-            student.Email = dto.Email;
-            _dbContext.SaveChanges();
+            var command = new EditPersonalInfoCommand(id, dto.Name, dto.Name);
+            var handler = new EditPersonalInfoCommandHandler(_dbContext);
+            handler.Handle(command);
             return Ok();
         }
 
