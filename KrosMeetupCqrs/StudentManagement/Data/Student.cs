@@ -13,7 +13,7 @@
 
         public virtual IList<Enrollment> Enrollments { get; set; }
 
-        private Enrollment GetEnrollment(int index)
+        public Enrollment GetEnrollment(int index)
         {
             if (Enrollments.Count > index)
             {

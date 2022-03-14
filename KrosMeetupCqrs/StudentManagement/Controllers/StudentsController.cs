@@ -28,7 +28,7 @@ namespace StudentManagement.Controllers
             => ConvertToDto(_studentRepository.GetById(id));
 
         [HttpPost]
-        public IActionResult Create([FromBody] StudentDto dto)
+        public IActionResult Register([FromBody] NewStudentDto dto)
         {
             var student = new Student
             {
@@ -53,8 +53,73 @@ namespace StudentManagement.Controllers
             return Ok();
         }
 
+        [HttpPost("{id}/enrollments")]
+        public IActionResult Enroll(int id, [FromBody] StudentEnrollDto dto)
+        {
+            Student student = _studentRepository.GetById(id);
+            if (student is null)
+            {
+                return BadRequest($"No student found with ID {id}.");
+            }
+            Course course = _courseRepository.GetByName(dto.Course);
+            if (course is null)
+            {
+                return BadRequest($"No course found with name {dto.Course}.");
+            }
+
+            student.Enroll(course);
+            _dbContext.SaveChanges();
+            return Ok();
+        }
+
+        [HttpDelete("{id}/enrollments/{enrollmentNumber}")]
+        public IActionResult Disenroll(int id, int enrollmentNumber)
+        {
+            Student student = _studentRepository.GetById(id);
+            if (student is null)
+            {
+                return BadRequest($"No student found with ID {id}.");
+            }
+            enrollmentNumber--;
+            Enrollment enrollment = student.GetEnrollment(enrollmentNumber); ;
+            if (enrollment is null)
+            {
+                return BadRequest($"No enrollment with number {enrollmentNumber} found.");
+            }
+
+            student.RemoveEnrollment(enrollment);
+            _dbContext.SaveChanges();
+            return Ok();
+        }
+
+        [HttpPut("{id}/enrollments/{enrollmentNumber}")]
+        public IActionResult ChangeEnrollment(int id, int enrollmentNumber, [FromBody] StudentChangeEnrollmentDto dto)
+        {
+            Student student = _studentRepository.GetById(id);
+            if (student is null)
+            {
+                return BadRequest($"No student found with ID {id}.");
+            }
+            Course course = _courseRepository.GetByName(dto.Course);
+            if (course is null)
+            {
+                return BadRequest($"No course found with name {dto.Course}.");
+            }
+            enrollmentNumber--;
+            Enrollment enrollment = student.GetEnrollment(enrollmentNumber); ;
+            if (enrollment is null)
+            {
+                return BadRequest($"No enrollment with number {enrollmentNumber} found.");
+            }
+
+            student.RemoveEnrollment(enrollment);
+            student.Enroll(course);
+            _dbContext.SaveChanges();
+            return Ok();
+        }
+
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] StudentDto dto)
+        public IActionResult EditPersonalInfo(int id, [FromBody] StudentPersonalInfoDto dto)
         {
             Student student = _studentRepository.GetById(id);
             if (student is null)
@@ -64,69 +129,12 @@ namespace StudentManagement.Controllers
 
             student.Name = dto.Name;
             student.Email = dto.Email;
-
-            Enrollment firstEnrollment = student.Enrollment1;
-            Enrollment secondEnrollment = student.Enrollment2;
-
-            if (HasEnrollmentChanged(dto.Course1, firstEnrollment))
-            {
-                if (string.IsNullOrWhiteSpace(dto.Course1)) // Student disenrolls
-                {
-                    student.RemoveEnrollment(firstEnrollment);
-                }
-                else
-                {
-                    Course course = _courseRepository.GetByName(dto.Course1);
-                    if (firstEnrollment is not null)
-                    {
-                        student.RemoveEnrollment(firstEnrollment);
-                    }
-                    student.Enroll(course);
-                }
-            }
-
-            if (HasEnrollmentChanged(dto.Course2, secondEnrollment))
-            {
-                if (string.IsNullOrWhiteSpace(dto.Course2)) // Student disenrolls
-                {
-                    student.RemoveEnrollment(secondEnrollment);
-                }
-                else
-                {
-                    Course course = _courseRepository.GetByName(dto.Course2);
-                    if (secondEnrollment is not null)
-                    {
-                        student.RemoveEnrollment(secondEnrollment);
-                    }
-                    student.Enroll(course);
-                }
-            }
-
             _dbContext.SaveChanges();
             return Ok();
         }
 
-        private bool HasEnrollmentChanged(string newCourseName, Enrollment enrollment)
-        {
-            if (string.IsNullOrWhiteSpace(newCourseName) && enrollment == null)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(newCourseName) || enrollment == null)
-            {
-                return true;
-            }
-
-            if (newCourseName is not null)
-            {
-                return !newCourseName.Equals(enrollment.Course.Name, StringComparison.OrdinalIgnoreCase);
-            }
-            return true;
-        }
-
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public IActionResult Unregister(int id)
         {
             Student student = _studentRepository.GetById(id);
             if (student is null)
